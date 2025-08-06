@@ -1,0 +1,4 @@
+{
+    "command": "npm install",
+    "working_directory": "/home/kavia/workspace/code-generation/nutrition-tracker-1134/nutrition_tracker_frontend"
+}
