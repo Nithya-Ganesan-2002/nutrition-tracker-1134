@@ -1,49 +1,130 @@
-import React, { useState, useEffect } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import "./App.css";
+import { COLORS, themeVars } from "./theme";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import Sidebar from "./components/Sidebar";
+import AuthView from "./views/AuthView";
+import DashboardView from "./views/DashboardView";
+import FoodLogView from "./views/FoodLogView";
+import HistoryView from "./views/HistoryView";
+import AnalyticsView from "./views/AnalyticsView";
+
+// Theme color setup CSS vars
+function ApplyTheming() {
+  useEffect(() => {
+    const style = document.documentElement.style;
+    const vars = themeVars();
+    Object.entries(vars).forEach(([k, v]) => style.setProperty(k, v));
+  }, []);
+  return null;
+}
+
+// Guards and layout
+function AuthGuard({ children }) {
+  const auth = useAuth();
+  const loc = useLocation();
+  if (!auth.token) {
+    if (loc.pathname !== "/login") return <Navigate to="/login" />;
+  }
+  if (auth.token && loc.pathname === "/login") return <Navigate to="/dashboard" />;
+  return children;
+}
+
+function MainLayout({ children }) {
+  return (
+    <div className="app-layout">
+      <Sidebar />
+      <div className="app-main-content">{children}</div>
+    </div>
+  );
+}
 
 // PUBLIC_INTERFACE
 function App() {
-  const [theme, setTheme] = useState('light');
-
-  // Effect to apply theme to document element
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
-
-  // PUBLIC_INTERFACE
-  const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
-  };
-
+  // Theme variables (minimal UI uses light theme always)
   return (
-    <div className="App">
-      <header className="App-header">
-        <button 
-          className="theme-toggle" 
-          onClick={toggleTheme}
-          aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-        >
-          {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
-        </button>
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <p>
-          Current theme: <strong>{theme}</strong>
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <AuthProvider>
+      <ApplyTheming />
+      <BrowserRouter>
+        <Routes>
+          <Route
+            path="/login"
+            element={<AuthView />}
+          />
+          <Route
+            path="/"
+            element={
+              <AuthGuard>
+                <MainLayout>
+                  <DashboardView />
+                </MainLayout>
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <AuthGuard>
+                <MainLayout>
+                  <DashboardView />
+                </MainLayout>
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/log"
+            element={
+              <AuthGuard>
+                <MainLayout>
+                  <FoodLogView />
+                </MainLayout>
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <AuthGuard>
+                <MainLayout>
+                  <HistoryView />
+                </MainLayout>
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <AuthGuard>
+                <MainLayout>
+                  <AnalyticsView />
+                </MainLayout>
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/logout"
+            element={
+              <AuthGuard>
+                <LogoutHandler />
+              </AuthGuard>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
+}
+
+// Log out, then redirect to /login
+function LogoutHandler() {
+  const auth = useAuth();
+  useEffect(() => {
+    auth.logout();
+    // eslint-disable-next-line no-restricted-globals
+    window.location.href = "/login";
+  }, [auth]);
+  return null;
 }
 
 export default App;
